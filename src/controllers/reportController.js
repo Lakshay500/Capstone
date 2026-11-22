@@ -4,7 +4,6 @@ const Product = require('../models/Product');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 
-// Sellers see only their own figures; admins see the whole platform
 const sellerId = (req) => (req.user.role === 'seller' ? new mongoose.Types.ObjectId(req.user.id) : null);
 
 const parseDate = (v, label) => {
@@ -26,7 +25,6 @@ const orderMatch = (req) => {
   return match;
 };
 
-// Aggregation 1: GET /api/reports/sales-summary?from=&to=  -> revenue per day + grand totals
 exports.salesSummary = asyncHandler(async (req, res) => {
   const seller = sellerId(req);
   const pipeline = [{ $match: orderMatch(req) }, { $unwind: '$items' }];
@@ -48,7 +46,6 @@ exports.salesSummary = asyncHandler(async (req, res) => {
   res.json({ success: true, totals: { revenue: Math.round(totals.revenue * 100) / 100, unitsSold: totals.unitsSold }, daily });
 });
 
-// Aggregation 2: GET /api/reports/best-selling?limit=5
 exports.bestSelling = asyncHandler(async (req, res) => {
   const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 5, 1), 50);
   const seller = sellerId(req);
@@ -70,7 +67,6 @@ exports.bestSelling = asyncHandler(async (req, res) => {
   res.json({ success: true, products: await Order.aggregate(pipeline) });
 });
 
-// Aggregation 3: GET /api/reports/inventory-summary  -> per-category stock position
 exports.inventorySummary = asyncHandler(async (req, res) => {
   const seller = sellerId(req);
   const match = { isActive: true };
@@ -101,7 +97,6 @@ exports.inventorySummary = asyncHandler(async (req, res) => {
   res.json({ success: true, summary });
 });
 
-// GET /api/reports/low-stock  -> products at or below their threshold
 exports.lowStock = asyncHandler(async (req, res) => {
   const seller = sellerId(req);
   const match = { isActive: true, $expr: { $lte: ['$stock', '$lowStockThreshold'] } };
