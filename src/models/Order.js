@@ -10,8 +10,8 @@ const orderSchema = new mongoose.Schema(
         _id: false,
         product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
         seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-        name: { type: String, required: true },   // snapshot
-        price: { type: Number, required: true },  // snapshot - later price changes do not affect the order
+        name: { type: String, required: true },
+        price: { type: Number, required: true },
         quantity: { type: Number, required: true, min: 1 },
       },
     ],
@@ -25,7 +25,7 @@ const orderSchema = new mongoose.Schema(
     },
     payment: {
       method: { type: String, default: 'SIMULATED' },
-      status: { type: String, default: 'simulated_paid' }, // no real gateway: clearly marked as simulated
+      status: { type: String, default: 'simulated_paid' },
     },
     status: { type: String, enum: STATUSES, default: 'pending' },
     statusHistory: [{ _id: false, status: String, at: { type: Date, default: Date.now }, by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' } }],
@@ -33,9 +33,9 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true, versionKey: false }
 );
 
-orderSchema.index({ user: 1, createdAt: -1 });        // customer order history
-orderSchema.index({ 'items.seller': 1, status: 1 });  // seller order lists + reports
-orderSchema.index({ status: 1, createdAt: -1 });      // admin dashboards / sales reports
+orderSchema.index({ user: 1, createdAt: -1 });
+orderSchema.index({ 'items.seller': 1, status: 1 });
+orderSchema.index({ status: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Order', orderSchema);
 module.exports.STATUSES = STATUSES;
