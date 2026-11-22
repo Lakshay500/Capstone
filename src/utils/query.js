@@ -7,7 +7,6 @@ exports.parsePagination = (query, defaultLimit = 10) => {
   return { page, limit, skip: (page - 1) * limit };
 };
 
-// "price,-createdAt" -> { price: 1, createdAt: -1 } using only whitelisted fields
 exports.parseSort = (raw, allowed, fallback = { createdAt: -1 }) => {
   if (!raw) return fallback;
   const sort = {};
