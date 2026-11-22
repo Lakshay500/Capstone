@@ -1,0 +1,41 @@
+const mongoose = require('mongoose');
+
+const STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
+
+const orderSchema = new mongoose.Schema(
+  {
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    items: [
+      {
+        _id: false,
+        product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+        seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        name: { type: String, required: true },   // snapshot
+        price: { type: Number, required: true },  // snapshot - later price changes do not affect the order
+        quantity: { type: Number, required: true, min: 1 },
+      },
+    ],
+    totalAmount: { type: Number, required: true, min: 0 },
+    shippingAddress: {
+      fullName: { type: String, required: [true, 'fullName is required'], trim: true },
+      line1: { type: String, required: [true, 'line1 is required'], trim: true },
+      city: { type: String, required: [true, 'city is required'], trim: true },
+      postalCode: { type: String, required: [true, 'postalCode is required'], trim: true },
+      phone: { type: String, trim: true },
+    },
+    payment: {
+      method: { type: String, default: 'SIMULATED' },
+      status: { type: String, default: 'simulated_paid' }, // no real gateway: clearly marked as simulated
+    },
+    status: { type: String, enum: STATUSES, default: 'pending' },
+    statusHistory: [{ _id: false, status: String, at: { type: Date, default: Date.now }, by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' } }],
+  },
+  { timestamps: true, versionKey: false }
+);
+
+orderSchema.index({ user: 1, createdAt: -1 });        // customer order history
+orderSchema.index({ 'items.seller': 1, status: 1 });  // seller order lists + reports
+orderSchema.index({ status: 1, createdAt: -1 });      // admin dashboards / sales reports
+
+module.exports = mongoose.model('Order', orderSchema);
+module.exports.STATUSES = STATUSES;
