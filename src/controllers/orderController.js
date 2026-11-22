@@ -4,9 +4,8 @@ const Product = require('../models/Product');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const bus = require('../events/eventBus');
-const { assertObjectId, parsePagination, round2 } = require('../utils/query');
+const {assertObjectId, parsePagination, round2 } = require('../utils/query');
 
-// Allowed status transitions (business rule)
 const TRANSITIONS = {
   pending: ['confirmed', 'cancelled'],
   confirmed: ['shipped', 'cancelled'],
@@ -16,26 +15,24 @@ const TRANSITIONS = {
 };
 
 const restoreStock = (lines) =>
-  Product.bulkWrite(lines.map((l) => ({ updateOne: { filter: { _id: l.product }, update: { $inc: { stock: l.quantity } } } })));
+  Product.bulkWrite(lines.map((l) => ({updateOne: {filter: {_id: l.product}, update: {$inc: {stock: l.quantity}}}})));
 
 const canView = (order, user) =>
   user.role === 'admin' ||
   String(order.user) === String(user._id) ||
   (user.role === 'seller' && order.items.some((i) => String(i.seller) === String(user._id)));
 
-// POST /api/orders  { shippingAddress }  - checkout from the cart
 exports.placeOrder = asyncHandler(async (req, res) => {
   const cart = await Cart.findOne({ user: req.user._id });
   if (!cart || cart.items.length === 0) throw new AppError('Cart is empty', 400);
 
-  const reserved = []; // lines whose stock we already decremented (for rollback)
+  const reserved = [];
   const items = [];
   const lowStock = [];
   let order;
 
   try {
     for (const line of cart.items) {
-      // Atomic reserve: the filter + $inc happen in one operation, so two buyers can never both take the last unit
       const product = await Product.findOneAndUpdate(
         { _id: line.product, isActive: true, stock: { $gte: line.quantity } },
         { $inc: { stock: -line.quantity } },
@@ -49,7 +46,6 @@ exports.placeOrder = asyncHandler(async (req, res) => {
         );
       }
       reserved.push({ product: product._id, quantity: line.quantity });
-      // Price is re-read from the database at checkout; the client never supplies prices
       items.push({ product: product._id, seller: product.seller, name: product.name, price: product.price, quantity: line.quantity });
       if (product.stock <= product.lowStockThreshold) lowStock.push(product);
     }
@@ -63,7 +59,7 @@ exports.placeOrder = asyncHandler(async (req, res) => {
       statusHistory: [{ status: 'pending', by: req.user._id }],
     });
   } catch (err) {
-    if (reserved.length) await restoreStock(reserved); // roll back reservations
+    if (reserved.length) await restoreStock(reserved);
     throw err;
   }
 
@@ -73,7 +69,6 @@ exports.placeOrder = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, message: 'Order placed (payment simulated)', order });
 });
 
-// GET /api/orders?status=&page=&limit=   customer: own | seller: containing own items | admin: all
 exports.list = asyncHandler(async (req, res) => {
   const filter = {};
   if (req.user.role === 'customer') filter.user = req.user._id;
@@ -90,12 +85,10 @@ exports.list = asyncHandler(async (req, res) => {
 exports.get = asyncHandler(async (req, res) => {
   assertObjectId(req.params.id, 'order id');
   const order = await Order.findById(req.params.id);
-  // 404 (not 403) hides the existence of other people's orders
   if (!order || !canView(order, req.user)) throw new AppError('Order not found', 404);
   res.json({ success: true, order });
 });
 
-// PATCH /api/orders/:id/status  { status }
 exports.updateStatus = asyncHandler(async (req, res) => {
   assertObjectId(req.params.id, 'order id');
   const order = await Order.findById(req.params.id);
@@ -108,14 +101,12 @@ exports.updateStatus = asyncHandler(async (req, res) => {
   }
   if (!TRANSITIONS[from].includes(to)) throw new AppError(`Invalid status change: ${from} -> ${to}`, 409);
 
-  // Compare-and-set on the current status: two concurrent cancels cannot both restore stock
   const updated = await Order.findOneAndUpdate(
     { _id: order._id, status: from },
     { $set: { status: to }, $push: { statusHistory: { status: to, by: req.user._id } } },
     { new: true }
   );
   if (!updated) throw new AppError('Order was modified by another request; reload and retry', 409);
-
   if (to === 'cancelled') await restoreStock(updated.items);
   bus.emit('order:status-changed', { order: updated, from, to });
   res.json({ success: true, order: updated });
