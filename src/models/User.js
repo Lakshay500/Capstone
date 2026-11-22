@@ -24,7 +24,6 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Hash only when the password field changed
 userSchema.pre('save', async function () {
   if (!this.isModified('password')) return;
   this.password = await bcrypt.hash(this.password, parseInt(process.env.BCRYPT_ROUNDS, 10) || 12);
