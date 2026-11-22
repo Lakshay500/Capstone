@@ -6,14 +6,12 @@ const asyncHandler = require('../utils/asyncHandler');
 const bus = require('../events/eventBus');
 const { assertObjectId, parsePagination, parseSort } = require('../utils/query');
 
-// Sellers may touch only their own products; admins may touch all
 const assertOwnerOrAdmin = (product, user) => {
   if (user.role !== 'admin' && String(product.seller) !== String(user._id)) {
     throw new AppError('You can only modify your own products', 403);
   }
 };
 
-// GET /api/products?q=&category=&seller=&minPrice=&maxPrice=&inStock=&sort=&page=&limit=   (public)
 exports.list = asyncHandler(async (req, res) => {
   const { q, category, seller, minPrice, maxPrice, inStock } = req.query;
   const filter = { isActive: true };
@@ -43,7 +41,6 @@ exports.get = asyncHandler(async (req, res) => {
   res.json({ success: true, product });
 });
 
-// POST /api/products  (seller or admin)
 exports.create = asyncHandler(async (req, res) => {
   const data = { ...req.body };
   assertObjectId(data.category, 'category');
@@ -53,14 +50,13 @@ exports.create = asyncHandler(async (req, res) => {
     assertObjectId(data.seller, 'seller');
     if (!(await User.exists({ _id: data.seller, role: 'seller' }))) throw new AppError('seller must be an existing seller account', 400);
   } else {
-    data.seller = req.user._id; // sellers can never create products for someone else
+    data.seller = req.user._id;
   }
   const product = await Product.create(data);
   if (product.stock <= product.lowStockThreshold) bus.emit('stock:low', product);
   res.status(201).json({ success: true, product });
 });
 
-// PATCH /api/products/:id
 exports.update = asyncHandler(async (req, res) => {
   assertObjectId(req.params.id, 'product id');
   const product = await Product.findOne({ _id: req.params.id, isActive: true });
@@ -71,13 +67,12 @@ exports.update = asyncHandler(async (req, res) => {
     assertObjectId(req.body.category, 'category');
     if (!(await Category.exists({ _id: req.body.category }))) throw new AppError('Category does not exist', 400);
   }
-  const { seller, ...safe } = req.body; // ownership cannot be reassigned through this route
+  const { seller, ...safe } = req.body;
   product.set(safe);
   await product.save();
   res.json({ success: true, product });
 });
 
-// PATCH /api/products/:id/stock   body { change: +n | -n }  - atomic, never negative
 exports.adjustStock = asyncHandler(async (req, res) => {
   assertObjectId(req.params.id, 'product id');
   const existing = await Product.findOne({ _id: req.params.id, isActive: true });
@@ -95,7 +90,6 @@ exports.adjustStock = asyncHandler(async (req, res) => {
   res.json({ success: true, product });
 });
 
-// DELETE /api/products/:id  - soft delete so historical orders stay valid
 exports.remove = asyncHandler(async (req, res) => {
   assertObjectId(req.params.id, 'product id');
   const product = await Product.findOne({ _id: req.params.id, isActive: true });
