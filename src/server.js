@@ -20,7 +20,7 @@ registerListeners();
 mongoose
   .connect(process.env.MONGO_URI)
   .then(async () => {
-    await mongoose.syncIndexes(); // make sure the declared indexes exist
+    await mongoose.syncIndexes();
     server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
   })
   .catch((err) => {
