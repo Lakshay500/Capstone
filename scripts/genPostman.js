@@ -1,5 +1,3 @@
-// Generates postman/EcommerceAPI.postman_collection.json  ->  run with: npm run postman
-// Import the file into Postman, run `npm run seed`, then run the collection top-to-bottom (Collection Runner).
 const fs = require('fs');
 const path = require('path');
 
