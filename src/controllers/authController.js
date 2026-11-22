@@ -4,10 +4,8 @@ const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const { issuePair, verifyRefresh, hash } = require('../utils/tokens');
 
-// Real hash used for a fixed-cost compare when the email is unknown (reduces user enumeration via timing)
 const DUMMY_HASH = bcrypt.hashSync('dummy-password', parseInt(process.env.BCRYPT_ROUNDS, 10) || 12);
 
-// POST /api/auth/register  (customer or seller; admins are created via seed or by an admin)
 exports.register = asyncHandler(async (req, res) => {
   const { name, email, password, role = 'customer' } = req.body;
   const user = await User.create({ name, email, password, role });
@@ -15,7 +13,6 @@ exports.register = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, user, ...tokens });
 });
 
-// POST /api/auth/login
 exports.login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
@@ -26,7 +23,6 @@ exports.login = asyncHandler(async (req, res) => {
   res.json({ success: true, user, ...tokens });
 });
 
-// POST /api/auth/refresh   - refresh-token rotation with reuse detection
 exports.refresh = asyncHandler(async (req, res) => {
   const { refreshToken } = req.body;
   let payload;
@@ -38,16 +34,14 @@ exports.refresh = asyncHandler(async (req, res) => {
   const h = hash(refreshToken);
   const user = await User.findOne({ _id: payload.sub, 'refreshTokens.tokenHash': h });
   if (!user) {
-    // A validly signed token that is not on file was already used -> assume theft, revoke every session
     await User.updateOne({ _id: payload.sub }, { $set: { refreshTokens: [] } });
     throw new AppError('Refresh token reuse detected; please log in again', 401);
   }
-  await User.updateOne({ _id: user._id }, { $pull: { refreshTokens: { tokenHash: h } } }); // old token is single-use
+  await User.updateOne({ _id: user._id }, { $pull: { refreshTokens: { tokenHash: h } } });
   const tokens = await issuePair(user);
   res.json({ success: true, ...tokens });
 });
 
-// POST /api/auth/logout   - invalidates the supplied refresh token
 exports.logout = asyncHandler(async (req, res) => {
   const { refreshToken } = req.body;
   await User.updateOne({ _id: req.user._id }, { $pull: { refreshTokens: { tokenHash: hash(refreshToken) } } });
