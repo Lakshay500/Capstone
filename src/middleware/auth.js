@@ -19,6 +19,5 @@ exports.authenticate = asyncHandler(async (req, res, next) => {
   next();
 });
 
-// RBAC: authorize('admin', 'seller')
 exports.authorize = (...roles) => (req, res, next) =>
   roles.includes(req.user.role) ? next() : next(new AppError('You do not have permission to perform this action', 403));
