@@ -7,16 +7,14 @@ exports.getMe = asyncHandler(async (req, res) => {
   res.json({ success: true, user: await User.findById(req.user._id) });
 });
 
-// PATCH /api/users/me - only name / password may be changed (never role or email)
 exports.updateMe = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).select('+password');
   if (req.body.name) user.name = req.body.name;
-  if (req.body.password) user.password = req.body.password; // re-hashed by pre-save hook
+  if (req.body.password) user.password = req.body.password;
   await user.save();
   res.json({ success: true, user });
 });
 
-// Admin routes
 exports.listUsers = asyncHandler(async (req, res) => {
   const { page, limit, skip } = parsePagination(req.query);
   const filter = {};
