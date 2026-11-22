@@ -4,14 +4,13 @@ const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const { assertObjectId, round2 } = require('../utils/query');
 
-// Totals are always calculated on the server from current product prices
 const buildView = async (userId) => {
   const cart = await Cart.findOne({ user: userId }).populate('items.product', 'name price stock isActive');
   const items = [];
   let total = 0;
   for (const line of cart ? cart.items : []) {
     const p = line.product;
-    if (!p || !p.isActive) continue; // silently skip removed products
+    if (!p || !p.isActive) continue;
     const subtotal = round2(p.price * line.quantity);
     total += subtotal;
     items.push({ productId: p.id, name: p.name, price: p.price, quantity: line.quantity, subtotal, available: p.stock >= line.quantity });
@@ -23,7 +22,6 @@ exports.getCart = asyncHandler(async (req, res) => {
   res.json({ success: true, cart: await buildView(req.user._id) });
 });
 
-// POST /api/cart/items  { productId, quantity }  (adds to existing quantity)
 exports.addItem = asyncHandler(async (req, res) => {
   const { productId, quantity } = req.body;
   assertObjectId(productId, 'productId');
@@ -41,7 +39,6 @@ exports.addItem = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, cart: await buildView(req.user._id) });
 });
 
-// PATCH /api/cart/items/:productId  { quantity }
 exports.updateItem = asyncHandler(async (req, res) => {
   assertObjectId(req.params.productId, 'productId');
   const cart = await Cart.findOne({ user: req.user._id });
