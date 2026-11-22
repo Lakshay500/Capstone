@@ -14,7 +14,6 @@ exports.signAccess = (user) =>
 exports.verifyAccess = (token) => jwt.verify(token, process.env.JWT_ACCESS_SECRET);
 exports.verifyRefresh = (token) => jwt.verify(token, process.env.JWT_REFRESH_SECRET);
 
-// Creates an access + refresh pair; only a SHA-256 hash of the refresh token is stored in the DB.
 exports.issuePair = async (user) => {
   const accessToken = exports.signAccess(user);
   const refreshToken = jwt.sign(
