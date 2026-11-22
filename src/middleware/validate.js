@@ -1,7 +1,5 @@
 const AppError = require('../utils/AppError');
 
-// Tiny declarative validator: validate({ email: { type:'string', required:true, pattern:/.../ } })
-// Unknown fields are stripped (mass-assignment protection).
 module.exports = (rules, { partial = false } = {}) => (req, res, next) => {
   const body = req.body && typeof req.body === 'object' ? req.body : {};
   const errors = [];
