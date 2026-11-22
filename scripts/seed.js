@@ -10,7 +10,6 @@ const Order = require('../src/models/Order');
   await mongoose.connect(process.env.MONGO_URI);
   await Promise.all([User.deleteMany({}), Category.deleteMany({}), Product.deleteMany({}), Cart.deleteMany({}), Order.deleteMany({})]);
 
-  // create() (not insertMany) so the bcrypt pre-save hook runs
   const admin = await User.create({ name: 'Admin', email: 'admin@shop.test', password: 'Admin@1234', role: 'admin' });
   const seller1 = await User.create({ name: 'Tech Seller', email: 'seller1@shop.test', password: 'Seller@1234', role: 'seller' });
   const seller2 = await User.create({ name: 'Book Seller', email: 'seller2@shop.test', password: 'Seller@1234', role: 'seller' });
