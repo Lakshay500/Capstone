@@ -1,0 +1,23 @@
+Nand2Tetris_Capstone_Lakshay_Anand/
+├── Part-A-Computer/
+│   ├── CPU.hdl
+│   ├── Memory.hdl
+│   ├── Computer.hdl
+│   └── tests/                 # genuine official simulator screenshots / test files
+├── Part-B-Assembler/
+│   ├── assembler.py
+│   ├── config.json            # K = 49
+│   ├── symbols.txt
+│   ├── programs/              # Add, Max, Rect, Pong smoke tests (.asm/.hack)
+│   └── tests/                 # Python unit tests
+├── Part-C-Box-Program/
+│   ├── generate_box.py
+│   ├── Box.asm                # generated for K = 49
+│   ├── Box.hack               # 82 instructions
+│   ├── emulator.py            # optional Python demo
+│   └── screenshots/           # genuine CPU Emulator evidence
+└── Documentation/
+    ├── REPORT_TEMPLATE.md
+    ├── SETUP_GUIDE_MACOS.md
+    ├── VIVA_QUESTIONS.md
+    └── VERIFICATION_STATUS.md

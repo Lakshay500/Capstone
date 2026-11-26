@@ -1,0 +1,5 @@
+{
+  "K": 49,
+  "student_name": "Lakshay Anand",
+  "note": "K is the last two digits of the university roll number. K=49 selects line-numbered assembler errors (K mod 3 = 1)."
+}
