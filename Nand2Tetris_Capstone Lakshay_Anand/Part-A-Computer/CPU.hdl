@@ -1,0 +1,44 @@
+// Hack CPU implementation for the Nand2Tetris capstone.
+// Uses the standard ALU, ARegister, DRegister and PC chips.
+CHIP CPU {
+    IN inM[16], instruction[16], reset;
+    OUT outM[16], writeM, addressM[15], pc[15];
+
+    PARTS:
+    // A-instruction loads the instruction value; C-instruction may load ALU output.
+    Not(in=instruction[15], out=isAInstruction);
+    And(a=instruction[15], b=instruction[5], out=cLoadA);
+    Or(a=isAInstruction, b=cLoadA, out=loadA);
+    Mux16(a=instruction, b=aluOut, sel=instruction[15], out=aInput);
+    ARegister(in=aInput, load=loadA, out=aOut, out[0..14]=addressM);
+
+    // D register loads when the D destination bit is set on a C-instruction.
+    And(a=instruction[15], b=instruction[4], out=loadD);
+    DRegister(in=aluOut, load=loadD, out=dOut);
+
+    // ALU Y input is A or M, selected by the instruction's a-bit.
+    Mux16(a=aOut, b=inM, sel=instruction[12], out=aluY);
+    ALU(
+        x=dOut, y=aluY,
+        zx=instruction[11], nx=instruction[10],
+        zy=instruction[9], ny=instruction[8],
+        f=instruction[7], no=instruction[6],
+        out=aluOut, zr=zr, ng=ng
+    );
+
+    // Expose the ALU result and assert memory write for the M destination.
+    Or16(a=aluOut, b=false, out=outM);
+    And(a=instruction[15], b=instruction[3], out=writeM);
+
+    // A jump is taken if any selected condition matches the ALU result.
+    Not(in=ng, out=notNegative);
+    Not(in=zr, out=notZero);
+    And(a=notNegative, b=notZero, out=positive);
+    And(a=instruction[2], b=ng, out=jumpLT);
+    And(a=instruction[1], b=zr, out=jumpEQ);
+    And(a=instruction[0], b=positive, out=jumpGT);
+    Or(a=jumpLT, b=jumpEQ, out=jumpLEQ);
+    Or(a=jumpLEQ, b=jumpGT, out=jumpCondition);
+    And(a=instruction[15], b=jumpCondition, out=loadPC);
+    PC(in=aOut, load=loadPC, inc=true, reset=reset, out[0..14]=pc);
+}
