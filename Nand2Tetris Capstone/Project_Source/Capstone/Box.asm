@@ -1,0 +1,52 @@
+// LAKSHAY ANAND • 2501730449 • PERSONAL ACADEMIC COPY
+// Box.asm  (K = 49)  - black box while any key is pressed
+// Starts at row 49, 20 rows tall, 32 pixels wide (2 words)
+// Start address = SCREEN + 32*49 = 17952
+(LOOP)
+@KBD
+D=M
+@PRESS
+D;JNE
+@color
+M=0
+@DRAW
+0;JMP
+(PRESS)
+@color
+M=-1
+(DRAW)
+@17952
+D=A
+@ptr
+M=D
+@20
+D=A
+@rows
+M=D
+(ROW)
+@2
+D=A
+@cols
+M=D
+(COL)
+@color
+D=M
+@ptr
+A=M
+M=D
+@ptr
+M=M+1
+@cols
+MD=M-1
+@COL
+D;JGT
+@30
+D=A
+@ptr
+M=D+M
+@rows
+MD=M-1
+@ROW
+D;JGT
+@LOOP
+0;JMP
